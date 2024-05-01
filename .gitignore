@@ -1,0 +1,8 @@
+**/__pycache__
+**/output/
+**/*.diff
+**/*.log
+**/*.zip
+**/.env
+**/.venv
+**/whitelist.txt
