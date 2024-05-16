@@ -38,7 +38,7 @@ def run_predict_live_subprocess(path_to_pcap: str):
     """
     process = subprocess.Popen(
         [
-            "..\.venv\Scripts\python.exe",
+            "python",
             os.path.join(const.LUCID_DIR, "lucid_cnn.py"),
             "--predict_live",
             path_to_pcap,

@@ -2,8 +2,10 @@ import os
 import json
 import subprocess
 from collections import Counter
+from sys import argv
+from util import const
 
-def get_most_frequent_sender():
+def get_most_frequent_sender(pcap_file: str, sender_count: str):
     """
     Получает IP-адрес отправителя, который отправил больше всего пакетов.
 
@@ -25,8 +27,8 @@ def get_most_frequent_sender():
     >>> get_most_frequent_sender("tests/test_data/pcap_files/merged.pcap")
     "123.45.67.89"
     """
-    pcap_file = "C:/Users/user/source/repos/DiplomaApi/DiplomaApi/Pcap/1.pcap"
-    sender_count = 10
+    pcap_file = argv[1]
+    sender_count = argv[2]
     # Получаем локальный IP-адрес текущей машины.
     # hostname -I может выдать несколько IP-адресов.
     current_local_ips = (
@@ -48,7 +50,7 @@ def get_most_frequent_sender():
     # Подробнее: https://www.redhat.com/sysadmin/using-wireshark-tshark1
     tshark_output = subprocess.check_output(
         [
-            "C:\\Program Files\\Wireshark\\tshark.exe",
+            const.TSHARK_PATH,
             "-r",
             pcap_file,
         ],
