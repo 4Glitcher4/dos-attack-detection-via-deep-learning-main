@@ -5,7 +5,7 @@ from collections import Counter
 from sys import argv
 from util import const
 
-def get_most_frequent_sender(pcap_file: str, sender_count: str):
+def get_most_frequent_sender(pcap_file: str, sender_count: str) -> str:
     """
     Получает IP-адрес отправителя, который отправил больше всего пакетов.
 
@@ -27,8 +27,6 @@ def get_most_frequent_sender(pcap_file: str, sender_count: str):
     >>> get_most_frequent_sender("tests/test_data/pcap_files/merged.pcap")
     "123.45.67.89"
     """
-    pcap_file = argv[1]
-    sender_count = argv[2]
     # Получаем локальный IP-адрес текущей машины.
     # hostname -I может выдать несколько IP-адресов.
     current_local_ips = (
@@ -83,7 +81,4 @@ def get_most_frequent_sender(pcap_file: str, sender_count: str):
         most_frequent_senders.append({"IpAddress" : sender[0], "RequestCount": sender[1]})
 
     json_data = json.dumps(most_frequent_senders) # Преобразование списка в JSON
-    print(json_data)
-
-
-get_most_frequent_sender()
+    return json_data

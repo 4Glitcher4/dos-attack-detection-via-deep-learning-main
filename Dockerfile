@@ -13,7 +13,7 @@ FROM python:${PYTHON_VERSION}-slim as base
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
+# the plication crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
 
@@ -24,7 +24,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Create a non-privileged user that the app will run under.
+# Create a non-privileged user that the p will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
 RUN adduser \
@@ -34,7 +34,7 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
-    appuser
+    puser
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
@@ -44,14 +44,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=./detector/requirements.txt,target=./detector/requirements.txt \
     python -m pip install -r ./detector/requirements.txt
 
-# Switch to the non-privileged user to run the application.
-USER appuser
+# Switch to the non-privileged user to run the plication.
+USER puser
 
 COPY ["output", "/app/output"]
 
 # Copy the source code into the container.
-COPY . .
-# Expose the port that the application listens on.
-EXPOSE 8000
-# Run the application.
+COPY . . 
+# Expose the port that the plication listens on.
+EXPOSE 5000
+# Run the plication.
 CMD ["python", "detector/src/main.py"]

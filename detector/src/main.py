@@ -1,12 +1,17 @@
 """Это главный модуль, который запускает все остальные процессы."""
 
+from collections import Counter
+import json
 import os
 import getpass
 import asyncio
+import subprocess
 import requests
 import configparser
 from os.path import dirname
-from os import sep  
+from flask import Flask, request, jsonify
+from os import sep
+from sys import argv
 
 from types import SimpleNamespace
 
@@ -35,7 +40,6 @@ settings = SimpleNamespace(
 # Получаем абсолютный путь к файлу с белым списком IP-адресов.
 settings.whitelist_path = os.path.abspath(settings.whitelist_path)
 
-
 # Запускаем Telegram-бота.
 async def telegram_bot():
     """Запускает бота-уведомителя."""
@@ -43,6 +47,98 @@ async def telegram_bot():
 
     asyncio.ensure_future(tgbot.start_bot())
 
+def get_most_frequent_sender(pcap_file: str, sender_count: str) -> str:
+    """
+    Получает IP-адрес отправителя, который отправил больше всего пакетов.
+
+    Запускает процесс `tshark` для анализа PCAP-файла (файла захвата),
+    затем разделяет всё, чтобы получить только IP-адрес отправителя.
+    Затем он ищет наиболее часто встречающийся IP-адрес отправителя,
+    который не является нашим локальным (например, если мы были отправителем).
+
+    Скорее всего, это не самый эффективный способ, но он работает.
+
+    Аргументы:
+        pcap_file (str): Путь к PCAP-файлу.
+
+    Возвращает:
+        Самый часто встречающийся IP-адрес отправителя, который не является
+        нашим собственным.
+
+    Пример:
+    >>> get_most_frequent_sender("tests/test_data/pcap_files/merged.pcap")
+    "123.45.67.89"
+    """
+    # Получаем локальный IP-адрес текущей машины.
+    # hostname -I может выдать несколько IP-адресов.
+    current_local_ips = (
+        subprocess.check_output("hostname -I", shell=True).decode("utf-8").strip()
+        if os.name == "posix"
+        else subprocess.check_output("ipconfig | findstr IPv4", shell=True)
+        .decode("utf-8")
+        .split(":")[1]
+        .strip()
+    )
+
+    # Если нам выдали несколько IP-адресов, разделим их по пробелам.
+    # Если мы получили только один IP-адрес, он будет просто обёрнут в список.
+    current_local_ips = current_local_ips.split()
+    
+    # Запускаем `tshark -r <файл>` для анализа PCAP-файла.
+    # Выходные данные обычно имеют следующий вид:
+    # 1038 7.740723639 192.168.1.201 → 192.168.1.177 TCP 66 443 → 45892 [ACK] Seq=686 Ack=346 Win=83 Len=0 TSval=1795305211 TSecr=88283636
+    # Подробнее: https://www.redhat.com/sysadmin/using-wireshark-tshark1
+    tshark_output = subprocess.check_output(
+        [
+            settings.custom_tshark_path or (
+    "tshark" if os.name == "posix" else "C:\\Program Files\\Wireshark\\tshark.exe"
+),
+            "-r",
+            pcap_file,
+        ],
+        stdin=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    # Разделяем выходные данные по строкам.
+    tshark_output = tshark_output.decode("utf-8")
+    lines = tshark_output.strip().split("\n")
+
+    # Мы создаем список IP-адресов отправителей, исключая наш локальный IP-адрес
+    # (или IP-адреса, если мы получили несколько).
+    # Мы будем использовать это для нахождения наиболее часто встречающегося
+    # IP-адреса.
+    # Не самое эффективное решение, но оно работает.
+    senders = [
+        # Нам нужно получить IP-адрес отправителя из каждой строки.
+        # Это третий (индекс = 2, так как мы начинаем с 0) элемент в строке,
+        # поэтому мы разделим строку по пробелам и получим элемент по индексу 2.
+        line.split()[2]
+        for line in lines
+        if line.split()[2] not in current_local_ips
+    ]
+
+    # Наиболее часто встречающийся IP-адреса отправителей.
+    most_frequent_senders = []
+
+    for sender in Counter(senders).most_common(int(sender_count)):
+        most_frequent_senders.append({"IpAddress" : sender[0], "RequestCount": sender[1]})
+
+    json_data = json.dumps(most_frequent_senders) # Преобразование списка в JSON
+    return json_data
+
+app = Flask(__name__)
+
+@app.route('/api/detect', methods=['POST'])
+def detect():
+    filePath = request.form.get('filePath')
+    senderCount = request.form.get('senderCount')
+    print(filePath)
+    print(senderCount)
+    result = get_most_frequent_sender(filePath, senderCount)
+    return jsonify(result)
+
+app.run(host='0.0.0.0', port=5000)
 
 # Если запускаем из консоли, а не путем импорта
 if __name__ == "__main__":
@@ -155,5 +251,3 @@ if __name__ == "__main__":
             else "Выполнение программы завершено."
         )
         proc.join()
-
-        
