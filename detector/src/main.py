@@ -136,7 +136,7 @@ def detect():
     print(filePath)
     print(senderCount)
     result = get_most_frequent_sender(filePath, senderCount)
-    return jsonify(result)
+    return result
 
 app.run(host='0.0.0.0', port=5000)
 
