@@ -6,6 +6,7 @@ import os
 import getpass
 import asyncio
 import subprocess
+import threading
 import requests
 import configparser
 from os.path import dirname
@@ -138,7 +139,13 @@ def detect():
     result = get_most_frequent_sender(filePath, senderCount)
     return result
 
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
 if __name__ == "__main__":
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.start()
+
     # Проверяем, указаны ли все необходимые параметры (в том числе, указал ли
     # пользователь свой Telegram ID и токен бота-уведомителя).
     # Если нет, выводим сообщение об ошибке и завершаем работу.
@@ -248,5 +255,3 @@ if __name__ == "__main__":
             else "Выполнение программы завершено."
         )
         proc.join()
-
-app.run(host='0.0.0.0', port=5000)
