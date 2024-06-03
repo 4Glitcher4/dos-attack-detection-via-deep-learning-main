@@ -138,9 +138,6 @@ def detect():
     result = get_most_frequent_sender(filePath, senderCount)
     return result
 
-app.run(host='0.0.0.0', port=5000)
-
-# Если запускаем из консоли, а не путем импорта
 if __name__ == "__main__":
     # Проверяем, указаны ли все необходимые параметры (в том числе, указал ли
     # пользователь свой Telegram ID и токен бота-уведомителя).
@@ -251,3 +248,5 @@ if __name__ == "__main__":
             else "Выполнение программы завершено."
         )
         proc.join()
+
+app.run(host='0.0.0.0', port=5000)
